@@ -1,6 +1,4 @@
 from math import exp, log10
-# from collections import defaultdict
-
 import sys, argparse, pdb
 import random
 
@@ -21,6 +19,7 @@ class allatoms:
         self.bonds = {}  # store bonds information, use atom ID as key
         self.atomnum = 0
         self.bondnum = 0
+        self.maxID = -1
 
     # read single frame xyz format: ID elementname X Y Z"
     # read atom info,  first column is also line number
@@ -35,6 +34,7 @@ class allatoms:
                 if index == 5:
                     t = line.split(' ')
                     self.atoms[int(t[0])] = Atom(int(t[0]), str(t[1]), float(t[2]), float(t[3]), float(t[4]))
+                    self.maxID = max(self.maxID, int(t[0]))
         print("XYZ file reading:", self.atomnum, " atoms!")
 
     # read single frame bonds information: type atom1-ID  atom2-ID
@@ -64,73 +64,85 @@ class allatoms:
 
     def outputxyz(self, xyzfile):
         Zn, H, C, N = {}, {}, {}, {}
-        nZn, nH, nC, nN = 1, 1, 1, 1
+        #nZn, nH, nC, nN = 1, 1, 1, 1
+        j = 1
         for i in self.atoms:
             if self.atoms[i].type_ is "Zn":
-                Zn[nZn] = self.atom[i].id_; nZn += 1
-            elif self.atoms[i].type_ is "H":
-                H[nH] = self.atom[i].id_; nH += 1
-            elif self.atoms[i].type_ is "C":
-                C[nC] = self.atom[i].id_; nC += 1
-            else:
-                N[nN] = self.atom[i].id_; nN += 1
+                Zn[j] = self.atom[i].id_; j += 1
+        for i in self.atoms:
+            if self.atoms[i].type_ is "H":
+                H[j] = self.atom[i].id_; j += 1
+        for i in self.atoms:
+            if self.atoms[i].type_ is "C":
+                C[j] = self.atom[i].id_; j += 1
+        for i in self.atoms:
+            if self.atoms[i].type_ is "N":
+                N[j] = self.atom[i].id_; j += 1
 
         f = open(xyzfile, 'w')
         f.write('%d\n' % self.atomnum)
         f.write('add benzine to Zif4\n')
-        id = 1
         for i in Zn:
             xyz = self.atoms[Zn[i]].xyz_,
-            f.write("%d %s %f %f %f\n" % (id, self.atoms[Zn[i]].type_, xyz[0], xyz[1],xyz[1]))
-            id += 1
+            f.write("%d %s %f %f %f\n" % (i, self.atoms[Zn[i]].type_, xyz[0], xyz[1],xyz[1]))
         for i in H:
             xyz = self.atoms[H[i]].xyz_,
-            f.write("%d %s %f %f %f\n" % (id, self.atoms[H[i]].type_, xyz[0], xyz[1],xyz[1]))
-            id += 1
+            f.write("%d %s %f %f %f\n" % (i, self.atoms[H[i]].type_, xyz[0], xyz[1],xyz[1]))
         for i in C:
             xyz = self.atoms[C[i]].xyz_,
-            f.write("%d %s %f %f %f\n" % (id, self.atoms[C[i]].type_, xyz[0], xyz[1],xyz[1]))
-            id += 1
+            f.write("%d %s %f %f %f\n" % (i, self.atoms[C[i]].type_, xyz[0], xyz[1],xyz[1]))
         for i in N:
             xyz = self.atoms[C[i]].xyz_,
-            f.write("%d %s %f %f %f\n" % (id, self.atoms[C[i]].type_, xyz[0], xyz[1],xyz[1]))
-            id += 1
+            f.write("%d %s %f %f %f\n" % (i, self.atoms[C[i]].type_, xyz[0], xyz[1],xyz[1]))
         f.close()
 
     def outputbond(self, bondfile):
-        Zn, H, C, N = {}, {}, {}, {}
-        bond
-        nZn, nH, nC, nN = 1, 1, 1, 1
+        oldID2newID = {}
+        newID2oldID = {}
+        j = 1
+        newbonds = {}
+        bondtype = {"Zn-N": 1, "N-Zn": 1, "H-C" : 2, "C-H" : 2, "C-N" : 3, "N-C" : 3, "C-C" : 4}
         for i in self.atoms:
             if self.atoms[i].type_ is "Zn":
-                Zn[nZn] = self.atom[i].id_; nZn += 1
-            elif self.atoms[i].type_ is "H":
-                H[nH] = self.atom[i].id_; nH += 1
-            elif self.atoms[i].type_ is "C":
-                C[nC] = self.atom[i].id_; nC += 1
-            else:
-                N[nN] = self.atom[i].id_; nN += 1
+                oldID2newID[self.atom[i].id_] = j; j += 1
+                newID2oldID[j] = self.atom[i].id_; j += 1
+        for i in self.atoms:
+            if self.atoms[i].type_ is "H":
+                oldID2newID[self.atom[i].id_] = j; j += 1
+                newID2oldID[j] = self.atom[i].id_; j += 1
+        for i in self.atoms:
+            if self.atoms[i].type_ is "C":
+                oldID2newID[self.atom[i].id_] = j; j += 1
+                newID2oldID[j] = self.atom[i].id_; j += 1
+        for i in self.atoms:
+            if self.atoms[i].type_ is "N":
+                oldID2newID[self.atom[i].id_] = j; j += 1
+                newID2oldID[j] = self.atom[i].id_; j += 1
+        j = 1
+        while j <= self.maxID:
+            if j in self.bonds:
+                newJ = oldID2newID[j]
+                neighbour = self.bonds[j]
+                for k in neighbour:
+                    newK = oldID2newID[k]
+                    assert newJ is not newK, "bonds error, same atoms!"
+                    if newJ < newK:
+                        if newJ in newbonds:
+                            newbonds[newJ].add(newK)
+                        else:
+                            newbonds[newJ] = set([newK])
+                    else:
+                        if newK in newbonds:
+                            newbonds[newK].add(newJ)
+                        else:
+                            newbonds[newK] = set([newJ])
+            j += 1
 
-        f = open(xyzfile, 'w')
-        f.write('%d\n' % self.atomnum)
-        f.write('add benzine to Zif4\n')
-        id = 1
-        for i in Zn:
-            xyz = self.atoms[Zn[i]].xyz_,
-            f.write("%d %s %f %f %f\n" % (id, self.atoms[Zn[i]].type_, xyz[0], xyz[1],xyz[1]))
-            id += 1
-        for i in H:
-            xyz = self.atoms[H[i]].xyz_,
-            f.write("%d %s %f %f %f\n" % (id, self.atoms[H[i]].type_, xyz[0], xyz[1],xyz[1]))
-            id += 1
-        for i in C:
-            xyz = self.atoms[C[i]].xyz_,
-            f.write("%d %s %f %f %f\n" % (id, self.atoms[C[i]].type_, xyz[0], xyz[1],xyz[1]))
-            id += 1
-        for i in N:
-            xyz = self.atoms[C[i]].xyz_,
-            f.write("%d %s %f %f %f\n" % (id, self.atoms[C[i]].type_, xyz[0], xyz[1],xyz[1]))
-            id += 1
+        f = open(bondfile, 'w')
+        for i in newbonds:
+            for j in newbonds[i]:
+                type = bondtype[self.atoms[newID2oldID[i]] + "-" + self.atoms[newID2oldID[j]]]
+                f.write("%d %d %d\n" % (type, i, j))
         f.close()
 
 
@@ -151,6 +163,7 @@ class allatoms:
         while newid in self.atoms:
             newid += 1
         self.atoms[newid] = Atom(newid, type, coord[0], coord[1], coord[2])
+        self.maxID = max(self.maxID, newid)
         return newid
 
     def add_bond(self, id1, id2):
@@ -282,14 +295,8 @@ def main():
         mysystem.add_bond(C3id, Cb)
         mysystem.add_bond(C4id, Ca)
 
+    # output XYZ and BONDS information
+    mysystem.outputxyz(args.XYZ)
+    mysystem.outputbond(args.BOND)
 
-
-
-    with open(args.BOND) as IN:
-        for read in IN:
-        # separate by space
-            t = read.split(' ')
-        # pdb.set_trace()
-            myG.addatom((t[0], int(t[1]), int(t[2])), args.lx, args.ly, args.lz)
-    myG.print(args.readdata, args.lx, args.ly, args.lz)
     print("Done")
