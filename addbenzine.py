@@ -21,19 +21,16 @@ class allatoms:
         self.bondnum = 0
         self.maxID = -1
 
-    # read single frame xyz format: ID elementname X Y Z ( must contain head lines, i.e. # of atom and comment line"
+    # read single frame xyz format: ID elementname X Y Z"
     # read atom info,  first column is also line number
     # 1 Zn 25.9831 14.4739 14.674
     # 2 Zn 24.08 20.3523 21.7369
     # 3 Zn 26.5129 15.4012 19.8225
     def read_xyz(self, filename):
-        linenum = 1
         with open(filename) as f:
             for index, line in enumerate(f):
-                if index == 1 and linenum == 1:
-                    print (line, self.atomnum)
+                if index == 1:
                     self.atomnum = int(line)
-                    linenum += 1
                 if index == 5:
                     t = line.split(' ')
                     self.atoms[int(t[0])] = Atom(int(t[0]), str(t[1]), float(t[2]), float(t[3]), float(t[4]))
@@ -115,7 +112,7 @@ class allatoms:
                 newID2oldID[j] = self.atom[i].id_; j += 1
         for i in self.atoms:
             if self.atoms[i].type_ is "C":
-                oldID2newID[self.atom[i].id_] = j; j += 1
+                oldID2newID[self.atom[i].id_] = j; j += 2
                 newID2oldID[j] = self.atom[i].id_; j += 1
         for i in self.atoms:
             if self.atoms[i].type_ is "N":
@@ -192,9 +189,6 @@ def main():
     parser.add_argument("BOND", help="Original bond list")
     parser.add_argument("OUT_bond", help="Output new bond list with benzine")
     parser.add_argument("OUT_xyz",  help="Output new xyz  file with benzine")
-    parser.add_argument("Lx", type=float, help="Box length X")
-    parser.add_argument("Ly", type=float, help="Box length Y")
-    parser.add_argument("Lz", type=float, help="Box length Z")
     args = parser.parse_args()
     print(args.XYZ)
 
@@ -287,41 +281,6 @@ def main():
             newH3[l] = O[l] + 2.41 * (C2[l] - C1[l])
             newC4[l] = O[l] + C1[l] - C2[l]
             newH4[l] = O[l] + 2.41 * (C1[l] - C2[l])
-        # period boundary
-        for l in range(3):
-            while newC1[l] < 0:
-                newC1[l] += args.Lx
-            while newC1[l] > args.Lx:
-                newC1[l] -= args.Lx
-            while newC2[l] < 0:
-                newC2[l] += args.Lx
-            while newC2[l] > args.Lx:
-                newC2[l] -= args.Lx
-            while newC3[l] < 0:
-                newC3[l] += args.Lx
-            while newC3[l] > args.Lx:
-                newC3[l] -= args.Lx
-            while newC4[l] < 0:
-                newC4[l] += args.Lx
-            while newC4[l] > args.Lx:
-                newC4[l] -= args.Lx
-            while newH1[l] < 0:
-                newH1[l] += args.Lx
-            while newH1[l] > args.Lx:
-                newH1[l] -= args.Lx
-            while newH2[l] < 0:
-                newH2[l] += args.Lx
-            while newH2[l] > args.Lx:
-                newH2[l] -= args.Lx
-            while newH3[l] < 0:
-                newH3[l] += args.Lx
-            while newH3[l] > args.Lx:
-                newH3[l] -= args.Lx
-            while newH4[l] < 0:
-                newH4[l] += args.Lx
-            while newH4[l] > args.Lx:
-                newH4[l] -= args.Lx
-
         C1id, C2id = mysystem.add_atom("C", newC1), mysystem.add_atom("C", newC2)
         C3id, C4id = mysystem.add_atom("C", newC3), mysystem.add_atom("C", newC4)
         H1id, H2id = mysystem.add_atom("C", newH1), mysystem.add_atom("C", newH2)
@@ -341,6 +300,3 @@ def main():
     mysystem.outputbond(args.BOND)
 
     print("Done")
-
-if __name__ == "__main__":
-    main()
