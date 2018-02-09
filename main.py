@@ -342,6 +342,6 @@ def main():
     mysystem.outputbond(args.BOND)
 
     print("Done")
-#yj
+#yj remote
 if __name__ == "__main__":
     main()
