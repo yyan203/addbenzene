@@ -336,6 +336,7 @@ def main():
         mysystem.add_bond(C3id, Cb)
         mysystem.add_bond(C4id, Ca)
 
+#abd local
     # output XYZ and BONDS information
     mysystem.outputxyz(args.XYZ)
     mysystem.outputbond(args.BOND)
