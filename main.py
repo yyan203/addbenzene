@@ -336,22 +336,22 @@ def main():
         for l in range(3):
             n[l] = 0.5 * (N1[l] + N2[l])
             o[l] = 0.5 * (C1[l] + C2[l])
-            o[l] = n[l] + 0.8 * (o[l] - n[l])
+            o[l] = n[l] + 0.5 * (o[l] - n[l])
             C1[l] = o[l] + 0.5 * (N1[l] - n[l])
             C2[l] = o[l] - 0.5 * (N1[l] - n[l])
-            O[l] = n[l] + 1.7 * (o[l] - n[l])
-            M[l] = n[l] + 2.4 * (o[l] - n[l])
-            Z[l] = n[l] + 3.0 * (o[l] - n[l])
+            O[l] = n[l] + 1.5 * (o[l] - n[l]) # 1.7
+            M[l] = n[l] + 2.2 * (o[l] - n[l]) # 2.4
+            Z[l] = n[l] + 2.8 * (o[l] - n[l]) # 3.0
 
         for l in range(3):
             newC1[l] = M[l] + 0.9 / 2 * (C2[l] - C1[l])
             newH1[l] = Z[l] + 1.3 / 2 * (C2[l] - C1[l])
             newC2[l] = M[l] - 0.9 / 2 * (C2[l] - C1[l])
             newH2[l] = Z[l] - 1.3 / 2 * (C2[l] - C1[l])
-            newC3[l] = O[l] + 0.9 * (C2[l] - C1[l])
-            newH3[l] = O[l] + 1.5 * (C2[l] - C1[l])
-            newC4[l] = O[l] - 0.9 * (C2[l] - C1[l])
-            newH4[l] = O[l] - 1.5 * (C2[l] - C1[l])
+            newC3[l] = O[l] + 0.6 * (C2[l] - C1[l])  # 0.9
+            newH3[l] = O[l] + 1.0 * (C2[l] - C1[l])  # 1.5
+            newC4[l] = O[l] - 0.6 * (C2[l] - C1[l])  # 0.9
+            newH4[l] = O[l] - 1.0 * (C2[l] - C1[l])  # 1.5
         # period boundary
         for l in range(3):
 
