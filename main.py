@@ -38,7 +38,7 @@ class allatoms:
                     #print(self.atoms[int(t[0])].xyz_)
                     self.maxID = max(self.maxID, int(t[0]))
         #print(self.atoms[10].xyz_)
-        print(self.atoms[10].type_)
+        #print(self.atoms[10].type_)
         print("XYZ file import:", self.atomnum, " atoms!")
 
     # read single frame bonds information: type atom1-ID  atom2-ID
@@ -59,7 +59,7 @@ class allatoms:
                     self.bonds[int(t[2])].add(int(t[1]))
                 self.bondnum += 1
         print("Import ", self.bondnum, " bonds!")
-        print (self.bonds)
+        #print(self.bonds)
 
 
     #  after delete atoms and add new atoms, the maximum ID of atoms might larger than self.atomnum
@@ -70,7 +70,7 @@ class allatoms:
         Zn, H, C, N = {}, {}, {}, {}
         #nZn, nH, nC, nN = 1, 1, 1, 1
         j = 1
-        print(self.atoms[10].type_,"yes here")
+        #print(self.atoms[10].type_,"yes here")
         for i in self.atoms:
             if self.atoms[i].type_ == "Zn":
                 Zn[j] = self.atoms[i].id_; j += 1
@@ -87,19 +87,18 @@ class allatoms:
         f = open(xyzfile, 'w')
         f.write('%d\n' % self.atomnum)
         f.write('add benzine to Zif4\n')
-        print(Zn)
-        for i in Zn:
+        for i in sorted(Zn.keys()):
             xyz = self.atoms[Zn[i]].xyz_
-            print(Zn[i], xyz)
+            #print(Zn[i], xyz)
             f.write("%d %s %f %f %f\n" % (i, self.atoms[Zn[i]].type_, xyz[0], xyz[1], xyz[2]))
-        for i in H:
+        for i in sorted(H.keys()):
             xyz = self.atoms[H[i]].xyz_
-            print(xyz)
+            #print(xyz)
             f.write("%d %s %f %f %f\n" % (i, self.atoms[H[i]].type_, xyz[0], xyz[1], xyz[2]))
-        for i in C:
+        for i in sorted(C.keys()):
             xyz = self.atoms[C[i]].xyz_
             f.write("%d %s %f %f %f\n" % (i, self.atoms[C[i]].type_, xyz[0], xyz[1], xyz[2]))
-        for i in N:
+        for i in sorted(N.keys()):
             xyz = self.atoms[N[i]].xyz_
             f.write("%d %s %f %f %f\n" % (i, self.atoms[N[i]].type_, xyz[0], xyz[1], xyz[2]))
         f.close()
@@ -130,7 +129,7 @@ class allatoms:
                 oldID2newID[self.atoms[i].id_] = j
                 newID2oldID[j] = self.atoms[i].id_
                 j += 1
-        print("old2new ID:",oldID2newID)
+        #print("old2new ID:",oldID2newID)
         j = 1
         while j <= self.maxID:
             if j in self.bonds:
@@ -152,11 +151,11 @@ class allatoms:
             j += 1
 
         f = open(bondfile, 'w')
-        print(newbonds)
+        #print(newbonds)
         for i in newbonds:
             for j in newbonds[i]:
                 if i < j:
-                    print(newID2oldID[i], newID2oldID[j], self.atoms[newID2oldID[i]].type_, self.atoms[newID2oldID[j]].type_ )
+                    #print(newID2oldID[i], newID2oldID[j], self.atoms[newID2oldID[i]].type_, self.atoms[newID2oldID[j]].type_ )
                     typ = bondtype[self.atoms[newID2oldID[i]].type_ + "-" + self.atoms[newID2oldID[j]].type_]
                     f.write("%d %d %d\n" % (int(typ), i, j))
         f.close()
@@ -167,7 +166,7 @@ class allatoms:
         assert atomID in self.atoms, "Atom %d does not exist!" % atomID
         neigh = self.bonds.pop(atomID)
         self.bondnum -= len(neigh)
-        print(self.bondnum)
+        #print(self.bondnum)
         for i in neigh:
             if len(self.bonds[i]) == 1:
                 self.bonds.pop(i)
@@ -211,6 +210,8 @@ def main():
     parser.add_argument("Lx", type=float, help="Box length X")
     parser.add_argument("Ly", type=float, help="Box length Y")
     parser.add_argument("Lz", type=float, help="Box length Z")
+    parser.add_argument("Nmin", type=int, help="minimum N index")
+    parser.add_argument("Nmax", type=int, help="maximum N index")
     args = parser.parse_args()
     print(args.XYZ)
 
@@ -228,22 +229,25 @@ def main():
         flag = 1
         random = None
         while flag is not 0:
-            #random = rd.randint(6145, 8192)
-            random = 267
+            width = args.Nmax - args.Nmin + 1
+            random = rd.randint(1, width) * rd.randint(1, width) % width + args.Nmin
+            #random = 267
+            #random = 235
             if random in Nlist: continue
             else:
                 Nlist.add(random)
+                print("\n#============= Adding %dth benzine ring ==============#" % (i))
                 print("choose N ID:", random)
                 flag = 0
         assert random in mysystem.bonds, "Random Nitrogen ID not in the atom list!!"
         neighbor = mysystem.bonds[random]
-        print(neighbor)
+        #print(neighbor)
 
         # get the C and N in N-C-N bonds
         Cindex, Nindex = None, None
         for j in neighbor:
             if mysystem.atoms[j].type_ is "C":
-                print(j)
+                #print(j)
                 for k in mysystem.bonds[j]:
                     if mysystem.atoms[k].type_ is "N" and k != random:
                         Cindex, Nindex = j, k
@@ -260,11 +264,11 @@ def main():
                 for k in mysystem.bonds[j]:
                     if mysystem.atoms[k].type_ is "C":
                         Ca = j
-                        print("Ca",Ca)
+                        #print("Ca",Ca)
                         break
         for j in mysystem.bonds[Ca]:
             if mysystem.atoms[j].type_ is "C":
-                print("Cb",Cb)
+                #print("Cb",Cb)
                 Cb = j; break
 
         for j in mysystem.bonds[Ca]:
@@ -280,7 +284,7 @@ def main():
         # delete the two H atoms
         mysystem.delete_atom(Ha)
         mysystem.delete_atom(Hb)
-        print(mysystem.bondnum)
+        print("Bond # after delete 2 H", mysystem.bondnum)
 
         # add 4 C  and  4  H  as shown below (nC#, nH#)
         #
@@ -301,7 +305,26 @@ def main():
 
         N1, N2, C1, C2 = mysystem.atoms[random].xyz_, mysystem.atoms[Nindex].xyz_, \
                          mysystem.atoms[Ca].xyz_, mysystem.atoms[Cb].xyz_
-        print(random,Nindex,Ca,Cb)
+        # remember translation operation, so all atoms can get back to their original position
+        N1m, N2m, C1m, C2m = [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]
+        # print("N1", N1)
+        # print("N2", N2)
+        for l in range(3):
+            if N1[l] - N2[l] > 0.5 * boxlen[l]:
+                N2[l] += boxlen[l]
+                N2m[l] += 1
+            if N1[l] - N2[l] < - 0.5 * boxlen[l]:
+                N1[l] += boxlen[l]
+                N1m[l] += 1
+            if C1[l] - C2[l] > 0.5 * boxlen[l]:
+                C2[l] += boxlen[l]
+                C2m[l] += 1
+            if C1[l] - C2[l] < - 0.5 * boxlen[l]:
+                C1[l] += boxlen[l]
+                C1m[l] += 1
+        #print(N1m,N2m,C1m,C2m)
+
+        #print(random,Nindex,Ca,Cb)
         newC1, newC2, newC3, newC4 = [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]
         newH1, newH2, newH3, newH4 = [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]
 
@@ -331,6 +354,16 @@ def main():
             newH4[l] = O[l] - 1.5 * (C2[l] - C1[l])
         # period boundary
         for l in range(3):
+
+            if N1m[l] > 0:
+                N1[l] -= boxlen[l]
+            if N2m[l] > 0:
+                N2[l] -= boxlen[l]
+            if C1m[l] > 0:
+                C1[l] -= boxlen[l]
+            if C2m[l] > 0:
+                C2[l] -= boxlen[l]
+
             while newC1[l] < 0:
                 newC1[l] += boxlen[l]
             while newC1[l] > boxlen[l]:
@@ -377,14 +410,14 @@ def main():
         mysystem.add_bond(C2id, C4id)
         mysystem.add_bond(C3id, Cb)
         mysystem.add_bond(C4id, Ca)
-        print("afteradd",mysystem.atoms[10].xyz_)
+        print("Bond # after add bIm", mysystem.bondnum)
 
 #abd local
     # output XYZ and BONDS information
     mysystem.outputxyz(args.OUTXYZ)
     mysystem.outputbond(args.OUTBOND)
 
-    print("Done")
+    print("\n\nJob completed!!!")
 #yj remote
 if __name__ == "__main__":
     main()
