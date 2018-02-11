@@ -67,7 +67,7 @@ class allatoms:
     #  assuming there are only  Zn  H  C  N elements
 
     def outputxyz(self, xyzfile):
-        Zn, H, C, N = {}, {}, {}, {}
+        Zn, H, C, N = {}, {}, {}, {}  # store newID2oldID
         #nZn, nH, nC, nN = 1, 1, 1, 1
         j = 1
         #print(self.atoms[10].type_,"yes here")
@@ -75,15 +75,20 @@ class allatoms:
             if self.atoms[i].type_ == "Zn":
                 Zn[j] = self.atoms[i].id_; j += 1
         for i in self.atoms:
-            if self.atoms[i].type_ == "H":
+            if self.atoms[i].type_ == "H" or self.atoms[i].type_ == "Hnew":
+                if j == 4401 or j == 4402:
+                    print("Original ID", i)
+
                 H[j] = self.atoms[i].id_; j += 1
         for i in self.atoms:
             if self.atoms[i].type_ == "C":
                 C[j] = self.atoms[i].id_; j += 1
         for i in self.atoms:
             if self.atoms[i].type_ == "N":
-                N[j] = self.atoms[i].id_; j += 1
+                N[j] = self.atoms[i].id_
+                j += 1
 
+        #print(Ntype)
         f = open(xyzfile, 'w')
         f.write('%d\n' % self.atomnum)
         f.write('add benzine to Zif4\n')
@@ -108,14 +113,14 @@ class allatoms:
         newID2oldID = {}
         j = 1
         newbonds = {}
-        bondtype = {"Zn-N": 1, "N-Zn": 1, "H-C": 2, "C-H": 2, "C-N": 3, "N-C": 3, "C-C": 4}
+        bondtype = {"Zn-N": 1, "N-Zn": 1, "H-C": 2, "C-H": 2, "Hnew-C": 2, "C-Hnew": 2,  "C-N": 3, "N-C": 3, "C-C": 4}
         for i in self.atoms:
             if self.atoms[i].type_ == "Zn":
                 oldID2newID[self.atoms[i].id_] = j
                 newID2oldID[j] = self.atoms[i].id_
                 j += 1
         for i in self.atoms:
-            if self.atoms[i].type_ == "H":
+            if self.atoms[i].type_ == "H" or self.atoms[i].type_ == "Hnew":
                 oldID2newID[self.atoms[i].id_] = j
                 newID2oldID[j] = self.atoms[i].id_
                 j += 1
@@ -224,6 +229,9 @@ def main():
     # remember visited N atoms
     Nlist = set()
     boxlen = [args.Lx, args.Ly, args.Lz]  # for later use to bring atom position back into the box space
+
+    rd.seed(1000)
+
     for i in range(1, args.NUM + 1):
         # find first N
         flag = 1
@@ -236,7 +244,7 @@ def main():
             if random in Nlist: continue
             else:
                 Nlist.add(random)
-                print("\n#============= Adding %dth benzine ring ==============#" % (i))
+                print("\n#============= Adding %dth benzine ring ==============#" % i)
                 print("choose N ID:", random)
                 flag = 0
         assert random in mysystem.bonds, "Random Nitrogen ID not in the atom list!!"
@@ -307,8 +315,16 @@ def main():
                          mysystem.atoms[Ca].xyz_, mysystem.atoms[Cb].xyz_
         # remember translation operation, so all atoms can get back to their original position
         N1m, N2m, C1m, C2m = [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]
+
+        if i == 717:
+            print(random,"N", N1)
+            print(Nindex,"N", N2)
+            print(Ca,"C", C1)
+            print(Cb,"C", C2)
+
         # print("N1", N1)
         # print("N2", N2)
+
         for l in range(3):
             if N1[l] - N2[l] > 0.5 * boxlen[l]:
                 N2[l] += boxlen[l]
@@ -322,6 +338,16 @@ def main():
             if C1[l] - C2[l] < - 0.5 * boxlen[l]:
                 C1[l] += boxlen[l]
                 C1m[l] += 1
+
+            if N1[l] - C1[l] > 0.5 * boxlen[l] or N2[l] - C1[l] > 0.5 * boxlen[l]\
+                    or N1[l] - C2[l] > 0.5 * boxlen[l] or N2[l] - C2[l] > 0.5 * boxlen[l]:
+                C1[l] += boxlen[l]
+                C2[l] += boxlen[l]
+            if N1[l] - C1[l] < -0.5 * boxlen[l] or N2[l] - C1[l] < -0.5 * boxlen[l] \
+                    or N1[l] - C2[l] < -0.5 * boxlen[l] or N2[l] - C2[l] < -0.5 * boxlen[l]:
+                N1[l] += boxlen[l]
+                N2[l] += boxlen[l]
+
         #print(N1m,N2m,C1m,C2m)
 
         #print(random,Nindex,Ca,Cb)
@@ -343,6 +369,7 @@ def main():
             M[l] = n[l] + 2.2 * (o[l] - n[l]) # 2.4
             Z[l] = n[l] + 2.8 * (o[l] - n[l]) # 3.0
 
+
         for l in range(3):
             newC1[l] = M[l] + 0.9 / 2 * (C2[l] - C1[l])
             newH1[l] = Z[l] + 1.3 / 2 * (C2[l] - C1[l])
@@ -352,46 +379,74 @@ def main():
             newH3[l] = O[l] + 1.0 * (C2[l] - C1[l])  # 1.5
             newC4[l] = O[l] - 0.6 * (C2[l] - C1[l])  # 0.9
             newH4[l] = O[l] - 1.0 * (C2[l] - C1[l])  # 1.5
+
+        if i == 717:
+            print(N1)
+            print(N2)
+            print(C1)
+            print(C2)
+            print(newH1)
+            print(newH2)
+
+
+
         # period boundary
         for l in range(3):
 
-            if N1m[l] > 0:
-                N1[l] -= boxlen[l]
-            if N2m[l] > 0:
-                N2[l] -= boxlen[l]
-            if C1m[l] > 0:
+            while C1[l] < 0:
+                C1[l] += boxlen[l]
+            while C1[l] > boxlen[l]:
                 C1[l] -= boxlen[l]
-            if C2m[l] > 0:
+            while C2[l] < 0:
+                C2[l] += boxlen[l]
+            while C2[l] > boxlen[l]:
                 C2[l] -= boxlen[l]
+
+            while N1[l] < 0:
+                N1[l] += boxlen[l]
+            while N1[l] > boxlen[l]:
+                N1[l] -= boxlen[l]
+            while N2[l] < 0:
+                N2[l] += boxlen[l]
+            while N2[l] > boxlen[l]:
+                N2[l] -= boxlen[l]
+
 
             while newC1[l] < 0:
                 newC1[l] += boxlen[l]
             while newC1[l] > boxlen[l]:
                 newC1[l] -= boxlen[l]
+
             while newC2[l] < 0:
                 newC2[l] += boxlen[l]
             while newC2[l] > boxlen[l]:
                 newC2[l] -= boxlen[l]
+
             while newC3[l] < 0:
                 newC3[l] += boxlen[l]
             while newC3[l] > boxlen[l]:
                 newC3[l] -= boxlen[l]
+
             while newC4[l] < 0:
                 newC4[l] += boxlen[l]
             while newC4[l] > boxlen[l]:
                 newC4[l] -= boxlen[l]
+
             while newH1[l] < 0:
                 newH1[l] += boxlen[l]
             while newH1[l] > boxlen[l]:
                 newH1[l] -= boxlen[l]
+
             while newH2[l] < 0:
                 newH2[l] += boxlen[l]
             while newH2[l] > boxlen[l]:
                 newH2[l] -= boxlen[l]
+
             while newH3[l] < 0:
                 newH3[l] += boxlen[l]
             while newH3[l] > boxlen[l]:
                 newH3[l] -= boxlen[l]
+
             while newH4[l] < 0:
                 newH4[l] += boxlen[l]
             while newH4[l] > boxlen[l]:
@@ -399,8 +454,14 @@ def main():
 
         C1id, C2id = mysystem.add_atom("C", newC1), mysystem.add_atom("C", newC2)
         C3id, C4id = mysystem.add_atom("C", newC3), mysystem.add_atom("C", newC4)
-        H1id, H2id = mysystem.add_atom("H", newH1), mysystem.add_atom("H", newH2)
+        H1id, H2id = mysystem.add_atom("Hnew", newH1), mysystem.add_atom("Hnew", newH2)
+        #H1id, H2id = mysystem.add_atom("H", newH1), mysystem.add_atom("H", newH2)
         H3id, H4id = mysystem.add_atom("H", newH3), mysystem.add_atom("H", newH4)
+
+        if H1id == 14437 or H1id == 14438 or H2id == 14437 or H2id == 14438 :
+            print(H1id)
+
+
         mysystem.add_bond(C1id, H1id)
         mysystem.add_bond(C2id, H2id)
         mysystem.add_bond(C3id, H3id)
